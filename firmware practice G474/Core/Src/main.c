@@ -3,23 +3,20 @@
 
 int main(void)
 {
-		RCC->APB1ENR1 |= (1 << 17);
-		RCC->AHB2ENR |= (1 << 0);
-		USART2->BRR = 1667;
-		USART2->CR1 |= (1<<2) | (1<<3); // Enable te and re first
-		USART2->CR1 |= (1<<0); // enable usart after
-		GPIOA->MODER |= (1<<5);
-		GPIOA->MODER &= ~(1<<4);
-		GPIOA->MODER |= (1<<7);
-		GPIOA->MODER &= ~(1<<6);
-		GPIOA->AFR[0] |= (7<<8) | (7<<12);
+	RCC->APB1ENR1 |= (1 << 0); //enable TIM2 clock on APB1 bus
+	RCC->AHB2ENR |= (1<<0); // enable clock for GPIOA
+	GPIOA->MODER &= ~(1<<11); // set to alternating function
+	GPIOA->MODER |= (1<<10); // ^^^
 
+	NVIC_EnableIRQ(TIM2_IRQn);
 
-
-while  (1){
-	char msg[] = "Hello\n";
-	for (int i = 0; i < 6; i++){
-		while(!(USART2->ISR & (1<<7)));
-		USART2->TDR = msg[i];
-	}}
+	TIM2->PSC = 15999; // correlates ticks to seconds, 16 mhz / 16000 for 1000 ticks/s
+	TIM2->ARR = 999; // auto reload register (threshold)
+	TIM2->DIER |= (1<<0); // interupt enable register -> fire intterupt every time counter reloads
+	TIM2->CR1 |= (1<<0); //Enable timer itself
+	while(1){}
+}
+void TIM2_IRQHandler(void){ //ISR FUNCTION
+	TIM2->SR &= ~(1<<0); //clear interrupt
+	GPIOA->ODR ^= (1<<5); // toggle led
 }
